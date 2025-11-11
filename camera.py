@@ -1,117 +1,123 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 import os
 
-# 페이지 설정
+# 页面设置
 st.set_page_config(
-    page_title="AI 비디오 감독",
+    page_title="AI视频导演",
     page_icon="🎬",
     layout="wide"
 )
 
-# 사이드바 - API 키 설정
+# 侧边栏 - API密钥设置
 with st.sidebar:
-    st.header("API Key 설정")
-    api_key = st.text_input("OpenAI API Key를 입력하세요:", type="password")
-    
-    if api_key:
-        openai.api_key = api_key
-        st.success("API Key가 설정되었습니다!")
+    st.header("API密钥设置")
+    api_key = st.text_input("请输入OpenAI API Key:", type="password")
     
     st.markdown("---")
-    st.markdown("### AI 비디오 감독")
-    st.markdown("원하는 작업을 탭에서 선택하세요")
+    st.markdown("### AI视频导演")
+    st.markdown("请从选项卡中选择所需任务")
 
-# 메인 콘텐츠
-st.title("🎬 AI 비디오 감독")
+# 主要内容
+st.title("🎬 AI视频导演")
 
-# 탭 생성
-tab1, tab2 = st.tabs(["비전 1: 프롬프트 디벨로퍼", "비전 2: 영상 프롬프트 분석기"])
+# 创建选项卡
+tab1, tab2 = st.tabs(["愿景1: 提示词开发器", "愿景2: 视频提示词分析器"])
 
 with tab1:
-    st.header("비전 1: 아이디어를 영상으로 발전시키기")
+    st.header("愿景1: 将想法发展为视频")
     
-    st.subheader("현재 역할: Video Director")
-    st.markdown("**You are a professional film director. Always analyze ideas in terms of visual storytelling**")
+    st.subheader("当前角色: 视频导演")
+    st.markdown("**您是一名专业电影导演。始终从视觉叙事的角度分析想法**")
     
-    # 사용자 입력
+    # 用户输入
     user_idea = st.text_area(
-        "발전시키고 싶은 아이디어를 입력하세요:",
-        placeholder="예: 이·비 오는 날 장비를 보는 습득 남자"
+        "请输入想要发展的想法:",
+        placeholder="例如: 下雨天查看设备的习惯男子",
+        height=100
     )
     
-    # 분석 버튼
-    if st.button("프롬프트 발전시키기"):
+    # 分析按钮
+    if st.button("发展提示词"):
         if not api_key:
-            st.error("OpenAI API Key를 먼저 입력해주세요.")
+            st.error("请先输入OpenAI API Key。")
         elif not user_idea:
-            st.error("아이디어를 입력해주세요.")
+            st.error("请输入想法。")
         else:
-            with st.spinner("AI가 아이디어를 분석하고 있습니다..."):
+            with st.spinner("AI正在分析您的想法..."):
                 try:
-                    # OpenAI API 호출
-                    response = openai.ChatCompletion.create(
+                    # 初始化OpenAI客户端
+                    client = OpenAI(api_key=api_key)
+                    
+                    # 调用OpenAI API
+                    response = client.chat.completions.create(
                         model="gpt-4",
                         messages=[
-                            {"role": "system", "content": "당신은 전문 영화 감독입니다. 아이디어를 시각적 스토리텔링 관점에서 분석하세요. 구체적인 장면, 조명, 색감, 카메라 앵글, 감정 등을 포함하여 설명해주세요."},
-                            {"role": "user", "content": f"다음 아이디어를 영화 장면으로 발전시켜주세요: {user_idea}"}
+                            {"role": "system", "content": "您是一名专业电影导演。请从视觉叙事的角度分析想法。请包含具体场景、照明、色彩、摄像机角度、情感等进行描述。"},
+                            {"role": "user", "content": f"请将以下想法发展为电影场景: {user_idea}"}
                         ],
                         max_tokens=1000
                     )
                     
-                    # 결과 표시
+                    # 显示结果
                     result = response.choices[0].message.content
-                    st.subheader("영상 시나리오 분석 결과:")
+                    st.subheader("视频场景分析结果:")
                     st.write(result)
                     
                 except Exception as e:
-                    st.error(f"API 호출 중 오류가 발생했습니다: {str(e)}")
+                    st.error(f"API调用出错: {str(e)}")
 
 with tab2:
-    st.header("비전 2: 영상 프롬프트 분석기")
-    st.info("이 기능은 아직 개발 중입니다. 추후 영상 프롬프트를 분석하는 기능이 추가될 예정입니다.")
+    st.header("愿景2: 视频提示词分析器")
     
-    # 파일 업로더
-    uploaded_file = st.file_uploader("영상 파일을 업로드하세요 (선택사항)", type=['mp4', 'mov', 'avi'])
+    # 文件上传器
+    uploaded_file = st.file_uploader("请上传视频文件（可选）", type=['mp4', 'mov', 'avi'])
     
     if uploaded_file is not None:
-        st.video(uploaded_file)
+        # 保存并显示文件
+        with open("temp_video.mp4", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.video("temp_video.mp4")
         
-    # 텍스트 분석
+    # 文本分析
     video_prompt = st.text_area(
-        "분석할 영상 프롬프트를 입력하세요:",
-        placeholder="영상에 대한 설명이나 프롬프트를 입력해주세요"
+        "请输入要分析的视频提示词:",
+        placeholder="请输入视频的描述或提示词",
+        height=100
     )
     
-    if st.button("프롬프트 분석하기") and video_prompt:
+    if st.button("分析提示词") and video_prompt:
         if not api_key:
-            st.error("OpenAI API Key를 먼저 입력해주세요.")
+            st.error("请先输入OpenAI API Key。")
         else:
-            with st.spinner("영상 프롬프트를 분석하고 있습니다..."):
+            with st.spinner("正在分析视频提示词..."):
                 try:
-                    # OpenAI API 호출
-                    response = openai.ChatCompletion.create(
+                    # 初始化OpenAI客户端
+                    client = OpenAI(api_key=api_key)
+                    
+                    # 调用OpenAI API
+                    response = client.chat.completions.create(
                         model="gpt-4",
                         messages=[
-                            {"role": "system", "content": "당신은 전문 영화 감독입니다. 제공된 영상 프롬프트를 분석하고, 개선점, 시각적 요소, 스토리텔링 측면에서 평가해주세요."},
-                            {"role": "user", "content": f"다음 영상 프롬프트를 분석해주세요: {video_prompt}"}
+                            {"role": "system", "content": "您是一名专业电影导演。请分析提供的视频提示词，并从改进点、视觉元素、叙事角度进行评估。"},
+                            {"role": "user", "content": f"请分析以下视频提示词: {video_prompt}"}
                         ],
                         max_tokens=800
                     )
                     
-                    # 결과 표시
+                    # 显示结果
                     result = response.choices[0].message.content
-                    st.subheader("프롬프트 분석 결과:")
+                    st.subheader("提示词分析结果:")
                     st.write(result)
                     
                 except Exception as e:
-                    st.error(f"API 호출 중 오류가 발생했습니다: {str(e)}")
+                    st.error(f"API调用出错: {str(e)}")
 
-# 푸터
+# 页脚
 st.markdown("---")
-st.markdown("### 사용 방법")
+st.markdown("### 使用方法")
 st.markdown("""
-1. 사이드바에서 OpenAI API Key를 입력하세요
-2. '비전 1' 탭에서 아이디어를 입력하고 영상 시나리오로 발전시킬 수 있습니다
-3. '비전 2' 탭에서 영상 프롬프트를 분석하고 개선점을 확인할 수 있습니다
+1. 在侧边栏中输入OpenAI API密钥
+2. 在"愿景1"选项卡中输入想法，可将其发展为视频场景
+3. 在"愿景2"选项卡中分析视频提示词并查看改进建议
 """)
